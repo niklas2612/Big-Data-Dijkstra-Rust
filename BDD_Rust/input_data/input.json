@@ -1,0 +1,67 @@
+
+ {
+
+  "paths": 
+  [
+    {
+      "from": "Hamburg",
+      "to": "Dubai",
+      "costs": 1
+    },
+
+    {
+      "from": "Mkg",
+      "to": "Marbach",
+      "costs": 5000
+    },
+    {
+      "from": "Downtown",
+      "to": "Dubai",
+      "costs": 1
+    },
+
+    {
+      "from": "City",
+      "to": "Oberstenfeld",
+      "costs": 5000
+    },
+    {
+      "from": "Sydney",
+      "to": "Job",
+      "costs": 1
+    },
+
+    {
+      "from": "Test",
+      "to": "Stuttgart",
+      "costs": 5000
+    },
+    {
+      "from": "Downtown",
+      "to": "Hood",
+      "costs": 1
+    },
+
+    {
+      "from": "Downtown",
+      "to": "Bietigheim",
+      "costs": 5000
+    },
+    {
+      "from": "Stuttgart West",
+      "to": "Hood",
+      "costs": 1
+    },
+
+    {
+      "from": "Downtown",
+      "to": "Killesberg",
+      "costs": 5000
+    }
+  ]
+
+        
+ }
+
+
+     

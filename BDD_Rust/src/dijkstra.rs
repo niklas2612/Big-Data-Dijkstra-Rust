@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
 
+use crate::input_output::*;
+
 
 #[derive(Serialize, Deserialize)]
 struct Input {
@@ -16,8 +18,22 @@ struct PathInformation{      // struct so save relevant path information
     costs: u16,
 }
 
-pub fn dijkstra (start_node:i32, data: &str, Roots: Vec<i32>) -> String{
+pub fn dijkstra (start_node:i32, data: &str) -> String{
+
+    println!("dijkstra calculation started");
+
+    let mut rootlist= RootList{roots:Vec::new()};
+    let mut Roots = Vec::new();
+    input_parse(&mut rootlist,String::from(data)).unwrap();     
+
     
+    for a in 0..rootlist.roots.len(){
+
+        println!("{}",rootlist.roots[a]);
+        Roots.push(rootlist.roots[a].parse::<i32>().unwrap());
+
+    }
+
     let input: Input = (serde_json::from_str(&data)).unwrap();
 
     let amount_nodes = Roots.len();
@@ -27,6 +43,7 @@ pub fn dijkstra (start_node:i32, data: &str, Roots: Vec<i32>) -> String{
     let max:i32=i32::max_value();
     
 
+    
     
 
     //println!("Distance from {} to {} is {}", input.paths[0].from, input.paths[0].to, input.paths[0].costs);
@@ -38,13 +55,13 @@ pub fn dijkstra (start_node:i32, data: &str, Roots: Vec<i32>) -> String{
     let mut nodelist = Roots;
 
 
-      
+    println!("length von noelist{}", nodelist.len());
  
     for a in 0..input.paths.len(){
  
-        node1[a] = input.paths[a].to.parse::<i32>().unwrap();
-        node2[a] = input.paths[a].from.parse::<i32>().unwrap();
-        distance[a] = input.paths[a].costs as i32;
+        node1.push(input.paths[a].to.parse::<i32>().unwrap());
+        node2.push(input.paths[a].from.parse::<i32>().unwrap());
+        distance.push(input.paths[a].costs as i32);
  
     }
     
@@ -90,7 +107,7 @@ pub fn dijkstra (start_node:i32, data: &str, Roots: Vec<i32>) -> String{
     //}
   
    
-
+    println!("kurz vor init");
 
     //INITALISIERUNG
 
@@ -115,12 +132,16 @@ pub fn dijkstra (start_node:i32, data: &str, Roots: Vec<i32>) -> String{
 
 //DIJKSTRA
 
+println!("hier beginnt die dijkstra berechnung");
+
 let mut iii=1;
     loop{
         
+        println!("length von noelist{}", nodelist.len());
         //println!("run {}", iii);
         iii=iii+1;
-        if nodelist[0]==max && nodelist[1]==max && nodelist[2]==max && nodelist[3]==max && nodelist[4]==max && nodelist[5]==max{
+
+        if nodelist.is_empty(){
             break;
         }
 
@@ -131,10 +152,13 @@ let mut iii=1;
         //println!("u ist {}", u);
         for i in 0..(amount_nodes) {
             //println!("i ist {}", i);
-            if table_distance[i]<=maxhelp && nodelist[i]!=max{
+
+            
+            if table_distance[i]<=maxhelp {
+                println!("test 123, {}",i);
                 maxhelp=table_distance[i];
                 u=(i) as i32;
-                u_value=nodelist[i];
+                u_value=table_node[i];
                 //println!("question");
             }
         }
@@ -146,11 +170,13 @@ let mut iii=1;
         //println!("nodelist {}", nodelist[4]);
         //println!("nodelist {}", nodelist[5]);
         //println!("u ist {}", u);
-        nodelist[(u) as usize]=max;
+        
+
+        
 
        // println!("u ist {}", u);
 
-        for i in 0..(amount_paths-1) {
+        for i in 0..(amount_paths) {
             //println!("aaaa");
             if node1[i]==u || node2[i]==u{
                 //println!("bbb");
@@ -158,18 +184,12 @@ let mut iii=1;
 
                 for j in 0..(amount_nodes) {
                     //println!("ccc");
-                    if nodelist[j]==node1[i] || nodelist[j]==node2[i]{
+
+                    println!("gliech kommt der vergleich mit contains");
+                    if nodelist.contains(&node1[i]) || nodelist.contains(&node2[i]){
                         //println!("{} {} {}", node1[i], node2[i], distance[i]);
 
-                        let mut v_value:i32=max; //wert von v aus nodes
-                        if nodelist[j]==node1[i]{
-                            v_value=node1[i];
-
-                        }else if nodelist[j]==node2[i]{
-                            v_value=node2[i];
-                        }
-                        //println!("v_value is {}", v_value);
-
+                        
                         //alternative streckendistanz berechnen
                         let distance_alt;
 
@@ -184,12 +204,19 @@ let mut iii=1;
 
 
                     }
+
+                    println!("cintain vergleich fertig");
                 }
+
+                
 
             }
         }
         
         table_number=table_number+1;
+        nodelist.remove((u) as usize);
+
+        println!("length von noelist{}", nodelist.len());
         
         //break;
     }

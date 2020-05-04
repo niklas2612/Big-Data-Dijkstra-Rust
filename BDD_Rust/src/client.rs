@@ -3,6 +3,9 @@
 
 mod dijkstra;
 use dijkstra::*;
+
+mod input_output;
+
 use std::time::Duration;
 use std::{io, thread,time};
 
@@ -100,7 +103,7 @@ fn main() {
                     {
                         
                         addr.do_send(ClientCommand(MSG_RESULT.to_string()));
-                        addr.do_send(ClientCommand(json_input.to_string()));  
+                        addr.do_send(ClientCommand(result_string.to_string()));  
                                          // Here is the result
                         thread::sleep(ten_millis);
                         println!("Your calculation was successfull transmitted. Thanks for your help!");
@@ -224,10 +227,25 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
                           println!("calculating..");
                           // HERE HAS TO BE THE CALCULATION!!
                           let st_nodes:Vec<&str> = roots_input.split(";").collect();
+
+                          println!("st_nodes gesplittet, erstes elem von st_nodes:{}", st_nodes[1]);
+                          
+                        let json_string_tmp = json_input; 
+
+                        
+                        println!("ein schritt vor der forschelife");
+
                           for i in 0..st_nodes.len()
                           {
-                             result_string=string_to_static_str(format!("{}:{}", result_string, dijkstra(st_nodes[i].parse::<i32>().unwrap()).to_string()));
+
+                            println!("{}", st_nodes[i]);
+
+                            let dijkstra_temp_string = dijkstra(st_nodes[i].parse::<i32>().unwrap(), json_string_tmp);
+
+                             result_string=string_to_static_str(format!("{}:{}", result_string, dijkstra_temp_string));
                           }
+
+
                           status_client=StatusClient::send_calculation_success;
                        }
                       StatusClient::send_calculation_success => 

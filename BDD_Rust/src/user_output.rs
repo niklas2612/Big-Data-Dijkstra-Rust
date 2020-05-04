@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 
 
+pub mod user_output{
 
 
 
@@ -100,4 +101,5 @@ pub fn create_table_from_string(string : &str) -> (i32, Table) {
 
 
 
+}
 }

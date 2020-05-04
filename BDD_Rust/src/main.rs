@@ -5,6 +5,7 @@
 
 
 mod input_output;
+mod dijkstra;
 use input_output::*;
 use crate::input_output::RootList;
 
@@ -326,7 +327,13 @@ fn splitVec (start:usize, end:usize, vec: Vec<String>) -> String
     for i in start..(end+1) 
     {
         println!("INDEX {} ", i);
-        returnString=format!("{};{}", returnString, vec[i].clone());
+        if i == start{
+            returnString = vec[i].clone();
+        }
+        else{
+            returnString=format!("{};{}", returnString, vec[i].clone());
+        }
+       
         println!("{}", returnString);
     }
     returnString=format!("{}{}", returnString,";");

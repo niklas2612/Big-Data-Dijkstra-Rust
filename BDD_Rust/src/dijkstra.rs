@@ -23,20 +23,20 @@ pub fn dijkstra (start_node:i32, data: &str) -> String{
     println!("dijkstra calculation started");
 
     let mut rootlist= RootList{roots:Vec::new()};
-    let mut Roots = Vec::new();
+    let mut nodelist = Vec::new();
     input_parse(&mut rootlist,String::from(data)).unwrap();     
 
     
     for a in 0..rootlist.roots.len(){
 
         println!("{}",rootlist.roots[a]);
-        Roots.push(rootlist.roots[a].parse::<i32>().unwrap());
+        nodelist.push(rootlist.roots[a].parse::<i32>().unwrap());
 
     }
 
     let input: Input = (serde_json::from_str(&data)).unwrap();
 
-    let amount_nodes = Roots.len();
+    let amount_nodes = nodelist.len();
     let amount_paths = input.paths.len();
 
     
@@ -52,7 +52,7 @@ pub fn dijkstra (start_node:i32, data: &str) -> String{
     let mut node1 = Vec::new();
     let mut node2 = Vec::new();
     let mut distance = Vec::new();
-    let mut nodelist = Roots;
+    
 
 
     println!("length von noelist{}", nodelist.len());
@@ -154,7 +154,7 @@ let mut iii=1;
             //println!("i ist {}", i);
 
             
-            if table_distance[i]<=maxhelp {
+            if table_distance[i]<=maxhelp && nodelist.contains(&table_node[i]) {
                 println!("test 123, {}",i);
                 maxhelp=table_distance[i];
                 u=(i) as i32;
@@ -177,7 +177,7 @@ let mut iii=1;
        // println!("u ist {}", u);
 
         for i in 0..(amount_paths) {
-            //println!("aaaa");
+            println!("aaaa");
             if node1[i]==u || node2[i]==u{
                 //println!("bbb");
                 //println!("{} {} {}", node1[i], node2[i], distance[i]);
@@ -185,9 +185,9 @@ let mut iii=1;
                 for j in 0..(amount_nodes) {
                     //println!("ccc");
 
-                    println!("gliech kommt der vergleich mit contains");
+                    
                     if nodelist.contains(&node1[i]) || nodelist.contains(&node2[i]){
-                        //println!("{} {} {}", node1[i], node2[i], distance[i]);
+                        println!("{} {} {}", node1[i], node2[i], distance[i]);
 
                         
                         //alternative streckendistanz berechnen
@@ -205,16 +205,39 @@ let mut iii=1;
 
                     }
 
-                    println!("cintain vergleich fertig");
+                    println!("contain vergleich fertig");
                 }
 
+                println!("schleife ter,miniertt");
                 
 
             }
         }
         
+        println!("äußere schleife terminiert\n nodelist: ");
+
         table_number=table_number+1;
-        nodelist.remove((u) as usize);
+        println!("u: {}, length from nodelist: {}", u, nodelist.len());
+        for z in 0..nodelist.len(){
+            print!("{}, ", nodelist[z]);
+        }
+        println!("table_node");
+
+        for z in 0..table_node.len(){
+            print!("{}, ", table_node[z]);
+        }
+        println!("");
+
+
+        for t in 0..nodelist.len(){
+
+            if nodelist[t] == table_node[u as usize]{
+                nodelist.remove(t);
+                break;
+            }
+        }
+
+        
 
         println!("length von noelist{}", nodelist.len());
         
@@ -224,6 +247,7 @@ let mut iii=1;
     let mut leosendstring:String;
     leosendstring= start_node.to_string() + ";";
     
+    println!("gleich wird leosendstring gebaut");
 
     for j in 0..amount_nodes {
 
@@ -231,6 +255,7 @@ let mut iii=1;
         
     }
    
+    println!("gleich wird returned folgender string: {}", leosendstring);
     return leosendstring;
 
 }

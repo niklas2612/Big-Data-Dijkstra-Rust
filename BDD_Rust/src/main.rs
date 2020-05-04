@@ -336,7 +336,7 @@ fn splitVec (start:usize, end:usize, vec: Vec<String>) -> String
        
         println!("{}", returnString);
     }
-    returnString=format!("{}{}", returnString,";");
+    
     return returnString;
 }
 

@@ -232,6 +232,11 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
                           
                         let json_string_tmp = json_input; 
 
+                        println!("st_nodes: ");
+                        for f in 0..st_nodes.len(){
+                            print!("{}, ", st_nodes[f]);
+                        }
+
                         
                         println!("ein schritt vor der forschelife");
 
@@ -242,6 +247,7 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
 
                             let dijkstra_temp_string = dijkstra(st_nodes[i].parse::<i32>().unwrap(), json_string_tmp);
 
+                            println!("dijkstra erfolgreich");
                              result_string=string_to_static_str(format!("{}:{}", result_string, dijkstra_temp_string));
                           }
 

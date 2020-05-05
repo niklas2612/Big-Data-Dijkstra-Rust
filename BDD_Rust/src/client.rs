@@ -108,7 +108,7 @@ fn main() {
                         thread::sleep(ten_millis);
                         println!("Your calculation was successfull transmitted. Thanks for your help!");
                     }
-                    StatusClient::confirm_calculation_success => (),
+                    StatusClient::confirm_calculation_success => {println!("message empfangen"); }
                     StatusClient::error_status => {println!("{}",MSG_ERROR);}
                       
                 }
@@ -189,7 +189,7 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
              _=> (),
            }
 
-         //   println!("{}", servermsg);          
+            println!("{}", servermsg);          
                                                             
                 match status_client 
                 {
@@ -248,7 +248,18 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
                             let dijkstra_temp_string = dijkstra(st_nodes[i].parse::<i32>().unwrap(), json_string_tmp);
 
                             println!("dijkstra erfolgreich");
-                             result_string=string_to_static_str(format!("{}:{}", result_string, dijkstra_temp_string));
+
+                            if i == 0
+                            {
+                                result_string = string_to_static_str(format!("{}", dijkstra_temp_string));
+                            }
+
+                            else{
+                                result_string=string_to_static_str(format!("{}:{}", result_string, dijkstra_temp_string));
+
+                            }
+
+                             
                           }
 
 

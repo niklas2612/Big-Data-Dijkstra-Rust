@@ -6,6 +6,11 @@
 
 mod input_output;
 mod dijkstra;
+mod user_output;
+use crate::user_output::*;
+use std::mem;
+use std::io::{stdin, stdout, Write};
+
 use input_output::*;
 use crate::input_output::RootList;
 
@@ -15,7 +20,7 @@ extern crate lazy_static;
 use std::time::{Duration, Instant};
 use std::sync::{Arc, Mutex};
 use std::{thread, time, io};
-use std::collections::HashSet;
+use std::collections::*;
 
 
 use actix::prelude::*;
@@ -52,6 +57,17 @@ static mut JsonCounter: i32=0;
 static mut RootCounter: i32=0;
 static mut status_server: StatusServer=StatusServer::send_acknowledge;
 static mut node_counter:i32=-1;
+
+
+
+lazy_static!{
+    static ref tables:Mutex<HashMap<i32, Table>>={
+        let mut m = HashMap::new();
+       
+        Mutex::new(m)
+    };
+}
+
 
 lazy_static!{
     static ref RootList_all:Mutex<Vec<String>>=Mutex::new(Vec::new());
@@ -221,7 +237,37 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
                       println!("");
                       println!("Calculation is finished, your result is: {}",text);
                       // TODO: Berechnetes Ergebnis is Leo Abi seine Datenstrktur einpflegen
-                     ctx.text(MSG_CONFIRM);
+
+                        
+
+                      let tmp_table_strings: Vec<&str> = text.split(":").collect();
+
+                      
+
+                      for m in 0..tmp_table_strings.len(){
+
+                        let (node_id, table) = create_table_from_string(tmp_table_strings[m]);
+
+                        let tmp_mutexguard = tables.lock().unwrap().insert(node_id, table);
+                        drop(tmp_mutexguard);
+
+                        
+                      }
+
+
+                      JsonCounter+=1;
+
+                    
+                   
+                      ctx.text(MSG_CONFIRM);
+
+                      println!("jsoncounter:{}, rootcounter{}", JsonCounter, RootCounter);
+
+                      if JsonCounter==AmountClients
+                      {
+                        
+                          //user_input();
+                      }
                    }
                   StatusServer::error_status=> 
                   {
@@ -360,3 +406,55 @@ fn set_workers() -> i32
     return n;
 }
 
+fn user_input(){
+
+    let mut exit = String::from("n");
+
+    while !(exit.trim() == "y") {
+        
+        let mut start = String::new();
+        let mut end = String::new();
+
+        print!("Startknoten eingeben:\n");
+        let _=stdout().flush();
+        stdin().read_line(&mut start).expect("Did not enter a correct string\n");
+        if let Some('\n')=start.chars().next_back() {
+            start.pop();
+        }
+        if let Some('\r')=start.chars().next_back() {
+            start.pop();
+        }
+        let start = start.parse::<i32>().unwrap();
+
+        
+        print!("Zielknoten eingeben:\n");
+        let _=stdout().flush();
+        stdin().read_line(&mut end).expect("Did not enter a correct string\n");
+        if let Some('\n')=end.chars().next_back() {
+            end.pop();
+        }
+        if let Some('\r')=end.chars().next_back() {
+            end.pop();
+        }   
+        let end = end.parse::<u16>().unwrap();
+
+        let path = tables.lock().unwrap()[&start].get_path(end);
+
+        
+
+        
+
+
+
+        println!("{}", path);
+
+        print!("Beenden?(any key for no or y for yes):\n");
+        let _=stdout().flush();
+        stdin().read_line(&mut exit).expect("Did not enter a correct string\n");      
+        
+
+        println!("{}", exit);
+
+    }
+
+}

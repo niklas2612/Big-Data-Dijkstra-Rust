@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 
 
-pub mod user_output{
+
 
 
 
@@ -49,6 +49,8 @@ impl Table{
     }
     
     pub fn get_path(&self, node: u16) -> String{
+
+        
     
         let mut current_pre_node :u16 = self.get_pre_node(node);
         let mut path:String = format!(" - {}", node);
@@ -58,6 +60,8 @@ impl Table{
             path = format!("{}{}{}", " - ", current_pre_node, path);
     
             current_pre_node = self.get_pre_node(current_pre_node);
+
+           
         }
     
         path = format!("{}{}, costs:{}", self.start_node, path, self.get_costs(node));
@@ -73,6 +77,8 @@ pub fn create_table_from_string(string : &str) -> (i32, Table) {
     //0;0,0,0;1,2,3;...
     let tokens:Vec<&str> = string.split(";").collect();
 
+    
+
     let lines = HashMap::new();
     let start_node:i32 = tokens[0].parse().unwrap();
 
@@ -87,6 +93,8 @@ pub fn create_table_from_string(string : &str) -> (i32, Table) {
 
     for i in 1..tokens.len(){
 
+       
+
         current_line = tokens[i].split(",").collect();
         cur_no = current_line[0].parse().unwrap();
         cur_pn = current_line[1].parse().unwrap();
@@ -97,9 +105,11 @@ pub fn create_table_from_string(string : &str) -> (i32, Table) {
         table.add_line_to_table(current_table_line, cur_no);
     }
 
+
+    
+
     return (start_node, table);
 
 
 
-}
 }

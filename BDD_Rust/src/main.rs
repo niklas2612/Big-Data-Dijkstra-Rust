@@ -1,8 +1,6 @@
-//! Simple echo websocket server.
-//! Open `http://localhost:8080/ws/index.html` in browser
-//! or [python console client](https://github.com/actix/examples/blob/master/websocket/websocket-client.py)
-//! could be used for testing.
+// here should be a great project header, created by L.N
 
+// annotation: the terms "roots" and "startnodes" are describing the same (maybe L.N adapts to unique term if he wants a good grade)
 mod dijkstra;
 mod input_output;
 mod user_output;
@@ -13,7 +11,7 @@ use crate::input_output::RootList;
 use input_output::*;
 
 #[macro_use]
-extern crate lazy_static;
+extern crate lazy_static;    // used for static Vectors and Hash Maps
 
 use std::collections::*;
 use std::sync::{Arc, Mutex};
@@ -40,19 +38,19 @@ enum StatusServer {
     error_status,
 }
 
+// Messages to communicate with clients
 pub const MSG_ACKNOWLEDGE: &'static str = "y\r\n";
 pub const MSG_JSON: &'static str = "json";
 pub const MSG_ROOT: &'static str = "root";
 pub const MSG_SUCCESS: &'static str = "success";
 pub const MSG_ERROR: &'static str = "error";
-pub const MSG_ENTER: &'static str = "\r\n";
 pub const MSG_CONFIRM: &'static str = "confirm";
 
 static mut AmountClients: i32 = 0; // variabel to save amount of clients
 static mut AmountClientsReady: i32 = 0; // variabel to save amount of clients ready for calculating
 static mut JsonCounter: i32 = 0;
 static mut RootCounter: i32 = 0;
-static mut status_server: StatusServer = StatusServer::send_acknowledge;
+static mut status_server: StatusServer = StatusServer::send_acknowledge; // variable for the current server status
 static mut node_counter: i32 = -1;
 
 lazy_static! {
@@ -63,7 +61,8 @@ lazy_static! {
 }
 
 lazy_static! {
-    static ref RootList_all: Mutex<Vec<String>> = Mutex::new(Vec::new());
+    static ref RootList_all: Mutex<Vec<String>> = Mutex::new(Vec::new());  
+    // List for saving all start nodes before sending them to clients     
 }
 
 /// do websocket handshake and start `MyWebSocket` actor
@@ -100,7 +99,7 @@ impl Actor for MyWebSocket {
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         // process websocket messages
-        // println!("WS: {:?}", msg);
+
         match msg {
             Ok(ws::Message::Ping(msg)) => {
                 // when receiving ping -> comm with client
@@ -113,12 +112,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
             }
             Ok(ws::Message::Text(text)) => {
                 unsafe {
+                    // go to corresponding modus according to client message
                     match text.as_str() {
-                        MSG_ENTER => status_server = StatusServer::error_status,
                         MSG_ACKNOWLEDGE => status_server = StatusServer::send_acknowledge,
                         MSG_ROOT => status_server = StatusServer::send_roots,
                         MSG_SUCCESS => status_server = StatusServer::receive_calculation_success,
-                        _ => status_server = StatusServer::receive_result,
+                        MSG_ERROR=> status_server=StatusServer::error_status,
+                        _=> status_server = StatusServer::receive_result,
                     }
 
                     match status_server {
@@ -143,34 +143,32 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
 
                             child.join().unwrap();
                             println!("sending json file to client {} ...", JsonCounter);
-                            ctx.text(MSG_JSON);
+                            ctx.text(MSG_JSON);                   // sending JSON trigger to client
                             let json_input: String = read_input(); // reading json file
-                            ctx.text(json_input);
+                            ctx.text(json_input);                 // sending JSON file to client
                             if AmountClients == JsonCounter {
                                 let mut rootlist = RootList { roots: Vec::new() };
-                                input_parse(&mut rootlist, read_input()).unwrap(); //TODO: making RootList Global!
+                                input_parse(&mut rootlist, read_input()).unwrap();
                                 for i in 0..rootlist.roots.len() {
-                                    RootList_all.lock().unwrap().push(rootlist.roots[i].clone());
+                                    RootList_all.lock().unwrap().push(rootlist.roots[i].clone());       // make a List with all nodes out of JSON input
                                 }
                             }
-                            // sending JSON files
+                
                             JsonCounter -= 1;
                             status_server = StatusServer::send_json;
                         }
 
-                        StatusServer::send_json => {
-                            println!("fuck");
-                        }
+                        StatusServer::send_json => (),
+                        // sending start nodes to client
                         StatusServer::send_roots => {
+                            println!("");
                             println!(
                                 "Sending respective startnodes to client {} ...",
                                 RootCounter
                             );
                             let AmountRoots = RootList_all.lock().unwrap().len() as i32;
                             let RootsPerClient = AmountRoots / AmountClients;
-                            /*let start=RootList_all.lock().unwrap().len() -(RootsPerClient*RootCounter as usize);
-                            let end =(RootList_all.lock().unwrap().len() -(RootsPerClient*(RootCounter as usize -1)))-1;*/
-
+                           
                             if node_counter == -1 {
                                 node_counter = AmountRoots;
                             }
@@ -192,8 +190,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
                             let vartmp = RootList_all.lock().unwrap().to_vec();
                             let vartmp2 = splitVec(start as usize, (end - 1) as usize, vartmp);
 
-                            ctx.text(MSG_ROOT);
-                            ctx.text(vartmp2.as_str());
+                            ctx.text(MSG_ROOT);     // sending root trigger for client
+                            ctx.text(vartmp2.as_str()); // sending startnodes
                             RootCounter -= 1;
                             status_server = StatusServer::receive_calculation_success;
                         }
@@ -205,19 +203,19 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
                             status_server = StatusServer::receive_result;
                         }
                         StatusServer::receive_result => {
-                            println!("");
                             println!(
                                 "Client {} has sent his results to this server!",
-                                RootCounter
+                                RootCounter+1
                             );
+                            println!("");
 
-                            let tmp_table_strings: Vec<&str> = text.split(":").collect();
+                            let tmp_table_strings: Vec<&str> = text.split(":").collect(); // decode the table string received from client
 
                             for m in 0..tmp_table_strings.len() {
                                 let (node_id, table) =
                                     create_table_from_string(tmp_table_strings[m]);
 
-                                let tmp_mutexguard = tables.lock().unwrap().insert(node_id, table);
+                                let tmp_mutexguard = tables.lock().unwrap().insert(node_id, table);      
                                 drop(tmp_mutexguard);
                             }
 
@@ -226,7 +224,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
                             ctx.text(MSG_CONFIRM);
 
                             if JsonCounter == AmountClients {
-                                user_input();
+                                // all results combined; user can make a request now
+                                user_input(); 
                             }
                         }
                         StatusServer::error_status => {
@@ -274,8 +273,10 @@ impl MyWebSocket {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    let AmountWorkers = set_workers();
+    let ConnectionString= set_connection();
+    let AmountWorkers = set_workers();         // getting amount of workers
 
+    
     std::env::set_var("RUST_LOG", "actix_server=info,actix_web=info");
     env_logger::init();
     HttpServer::new(|| {
@@ -289,7 +290,8 @@ async fn main() -> std::io::Result<()> {
     })
     // start http server on 127.0.0.1:8080
     .workers(AmountWorkers as usize)
-    .bind("127.0.0.1:8080")?
+   // .bind(ConnectionString)?   does not work, maybe Chris Mader will fix this
+    .bind("127.0.0.1:8080")? 
     .run()
     .await
 }
@@ -308,7 +310,7 @@ fn acknowledgeclient() {
         if AmountClientsReady == AmountClients {
             println!("-------------------------------------------------------------------------");
             println!("All clients have acknowledged and would like to join; you can start the calculation right now!");
-            println!("NOTE: PRESS ENTER AS OFTEN AS MANY CLIENTS YOU HAVE CONNECTED!");
+            println!("Press enter or any other input as often as many clients you hav in the distributed system..");
             println!("");
         } else {
             println!("");
@@ -338,10 +340,10 @@ fn splitVec(start: usize, end: usize, vec: Vec<String>) -> String {
 }
 
 fn set_workers() -> i32 {
-    println!("Welcome to Big Data Djikstra! This is a distributed system for calculating the shortest path using actix and websockets for communication");
+   
     println!("");
     println!(
-        "To optimize your performance please give the max amounts of clients you want to join:"
+        "Please give the max amounts of workers you want to use:"
     );
 
     let mut input = String::new();
@@ -352,12 +354,21 @@ fn set_workers() -> i32 {
     println!("");
     println!("Setting up the server for you...");
 
-    let ten_millis = time::Duration::from_millis(2000);
-    thread::sleep(ten_millis);
-
     return n;
 }
 
+fn set_connection() -> String
+{
+    println!("Welcome to Big Data Djikstra! This is a distributed system for calculating the shortest path using actix and websockets for communication");
+    println!("Please enter the IP adress and port to host your webserver.");
+    println!("Standard is 127.0.0.1:8080 (localhost), optionally you can enter your IPv4 to host this service for multiple devices. Therefore use ipconfig on your cmd to look up your address");
+
+    let mut input = String::new();
+
+    io::stdin().read_line(&mut input).unwrap();
+    return input;
+
+}
 fn user_input() {
     thread::spawn(move || {
         let mut exit = String::from("n");

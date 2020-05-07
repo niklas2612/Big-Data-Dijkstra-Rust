@@ -7,7 +7,7 @@ use dijkstra::*;
 mod input_output;
 
 use std::time::Duration;
-use std::{io, thread,time};
+use std::{io, thread, time};
 
 use actix::io::SinkWrite;
 use actix::*;
@@ -20,7 +20,8 @@ use awc::{
 use bytes::Bytes;
 use futures::stream::{SplitSink, StreamExt};
 
-enum StatusClient {                  // enum for managing status of client during distributed calculation
+enum StatusClient {
+    // enum for managing status of client during distributed calculation
     send_inquiry,
     receive_json,
     inquire_roots,
@@ -36,11 +37,11 @@ pub const MSG_SUCCESS: &'static str = "success";
 pub const MSG_ERROR: &'static str = "error";
 pub const MSG_JSON: &'static str = "json";
 pub const MSG_RESULT: &'static str = "result";
-pub const MSG_CONFIRM: &'static str="confirm";
+pub const MSG_CONFIRM: &'static str = "confirm";
 
-static mut json_input : & 'static str ="";
-static mut roots_input:&'static str="";
-static mut result_string:&'static str="";
+static mut json_input: &'static str = "";
+static mut roots_input: &'static str = "";
+static mut result_string: &'static str = "";
 
 static mut status_client: StatusClient = StatusClient::send_inquiry;
 
@@ -66,7 +67,6 @@ fn main() {
             ChatClient::add_stream(stream, ctx);
             ChatClient(SinkWrite::new(sink, ctx))
         });
-        
 
         let ten_millis = time::Duration::from_millis(200);
 
@@ -74,53 +74,43 @@ fn main() {
         thread::spawn(move || loop {
             let mut cmd = String::new();
             unsafe {
-                match status_client
-                {
-                    StatusClient::send_inquiry => 
-                      {
-                          if io::stdin().read_line(&mut cmd).is_err() {
-                            println!("{}",MSG_ERROR);
-                            return;                                      // change algotithm to have a automated answer
+                match status_client {
+                    StatusClient::send_inquiry => {
+                        if io::stdin().read_line(&mut cmd).is_err() {
+                            println!("{}", MSG_ERROR);
+                            return; // change algotithm to have a automated answer
                         }
                         addr.do_send(ClientCommand(cmd));
-                      }
+                    }
                     StatusClient::receive_json => (),
-                    StatusClient::inquire_roots=>
-                    {
-                      
-                      addr.do_send(ClientCommand(MSG_ROOT.to_string()));
-                      thread::sleep(ten_millis);
-                    }
-                    StatusClient::receive_roots=> (),
-                    StatusClient::inquire_calculation_success =>
-                    {
-                     
-                     addr.do_send(ClientCommand(MSG_SUCCESS.to_string()));
-                     thread::sleep(ten_millis);
-                     
-                    } 
-                    StatusClient::send_calculation_success=>
-                    {
-                        
-                        addr.do_send(ClientCommand(MSG_RESULT.to_string()));
-                        addr.do_send(ClientCommand(result_string.to_string()));  
-                                         // Here is the result
+                    StatusClient::inquire_roots => {
+                        addr.do_send(ClientCommand(MSG_ROOT.to_string()));
                         thread::sleep(ten_millis);
-                        println!("Your calculation was successfull transmitted. Thanks for your help!");
                     }
-                    StatusClient::confirm_calculation_success => {println!("message empfangen"); }
-                    StatusClient::error_status => {println!("{}",MSG_ERROR);}
-                      
+                    StatusClient::receive_roots => (),
+                    StatusClient::inquire_calculation_success => {
+                        addr.do_send(ClientCommand(MSG_SUCCESS.to_string()));
+                        thread::sleep(ten_millis);
+                    }
+                    StatusClient::send_calculation_success => {
+                        addr.do_send(ClientCommand(MSG_RESULT.to_string()));
+                        addr.do_send(ClientCommand(result_string.to_string()));
+                        // Here is the result
+                        thread::sleep(ten_millis);
+                        println!(
+                            "Your calculation was successfull transmitted. Thanks for your help!"
+                        );
+                    }
+                    StatusClient::confirm_calculation_success => {}
+                    StatusClient::error_status => {
+                        println!("{}", MSG_ERROR);
+                    }
                 }
             }
-     
         });
-
     });
     sys.run().unwrap();
-  
 }
-
 
 struct ChatClient(SinkWrite<Message, SplitSink<Framed<BoxedSocket, Codec>, Message>>);
 
@@ -161,123 +151,92 @@ impl Handler<ClientCommand> for ChatClient {
     type Result = ();
 
     fn handle(&mut self, msg: ClientCommand, _ctx: &mut Context<Self>) {
-        if msg.0.trim() =="y"  // only check from commandline input 
+        if msg.0.trim() == "y"
+        // only check from commandline input
         {
             self.0.write(Message::Text(msg.0)).unwrap();
             println!("");
-        }         
-        else {self.0.write(Message::Text(msg.0)).unwrap();}        // Needs work, catching other input then y
-       
-        }
-    
+        } else {
+            self.0.write(Message::Text(msg.0)).unwrap();
+        } // Needs work, catching other input then y
     }
+}
 
 /// Handle server websocket messages
 impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
     fn handle(&mut self, msg: Result<Frame, WsProtocolError>, _: &mut Context<Self>) {
         if let Ok(Frame::Text(txt)) = msg {
-            let servermsg:String= std::str::from_utf8(&txt).unwrap().to_string(); // converting byte to string for easier handling
-     unsafe {
-            match servermsg.as_str()
-            {
-           
-           MSG_JSON => status_client=StatusClient::receive_json,
-           MSG_ROOT => status_client=StatusClient::receive_roots,
-           MSG_SUCCESS  => status_client=StatusClient::inquire_calculation_success,
-           MSG_ERROR => status_client=StatusClient::error_status,
-           MSG_CONFIRM=> status_client=StatusClient::confirm_calculation_success,
-             _=> (),
-           }
+            let servermsg: String = std::str::from_utf8(&txt).unwrap().to_string(); // converting byte to string for easier handling
+            unsafe {
+                match servermsg.as_str() {
+                    MSG_JSON => status_client = StatusClient::receive_json,
+                    MSG_ROOT => status_client = StatusClient::receive_roots,
+                    MSG_SUCCESS => status_client = StatusClient::inquire_calculation_success,
+                    MSG_ERROR => status_client = StatusClient::error_status,
+                    MSG_CONFIRM => status_client = StatusClient::confirm_calculation_success,
+                    _ => (),
+                }
 
-            println!("{}", servermsg);          
-                                                            
-                match status_client 
-                {
-                      StatusClient::send_inquiry => (),  
-                      // base status when making connection                 
-                      StatusClient::receive_json => 
-                      {
-                          
-                          println!("getting djkstra input from server...");
-                          println!("received json file!");  
+                println!("{}", servermsg);
 
-                          status_client=StatusClient::inquire_roots;
-                      }
-                      StatusClient::inquire_roots=>
-                      {
-                          json_input =string_to_static_str(servermsg);
-                        // uses boxing for coping the value of servermsg to static variable for saving json input                                                              
-                          println!("inquireing roots from server... Just Type Return to start calculation");
-                          println!("NOTE: IF YOU DO ANY OUTHER INPUT THEN JUST ENTER YOU WILL QUIT THE PROCESS!");
-                      }
-                         StatusClient::receive_roots=> 
-                      {
-                          println!("getting roots from server...");
-                          println!("received roots!");
+                match status_client {
+                    StatusClient::send_inquiry => (),
+                    // base status when making connection
+                    StatusClient::receive_json => {
+                        println!("Received json file from server!");
 
-                          status_client=StatusClient::inquire_calculation_success;
-                        
-                      }
-                      StatusClient::inquire_calculation_success=>
-                       {
-                          println!("{}", servermsg);
-                          roots_input=string_to_static_str(servermsg);
-                         // uses boxing for coping the value of servermsg to static variable for saving root input 
-                          println!("");
-                          println!("calculating..");
-                          // HERE HAS TO BE THE CALCULATION!!
-                          let st_nodes:Vec<&str> = roots_input.split(";").collect();
+                        status_client = StatusClient::inquire_roots;
+                    }
+                    StatusClient::inquire_roots => {
+                        json_input = string_to_static_str(servermsg);
+                        // uses boxing for coping the value of servermsg to static variable for saving json input
+                        println!(
+                            "Inquireing roots from server... Just Type Return to start calculation"
+                        );
+                        println!("NOTE: IF YOU DO ANY OUTHER INPUT THEN JUST ENTER YOU WILL QUIT THE PROCESS!");
+                    }
+                    StatusClient::receive_roots => {
+                        println!("Received startnodes from server!");
 
-                          println!("st_nodes gesplittet, erstes elem von st_nodes:{}", st_nodes[1]);
-                          
-                        let json_string_tmp = json_input; 
+                        status_client = StatusClient::inquire_calculation_success;
+                    }
+                    StatusClient::inquire_calculation_success => {
+                        roots_input = string_to_static_str(servermsg);
+                        // uses boxing for coping the value of servermsg to static variable for saving root input
+                        println!("\nCalculating...");
+                        // HERE HAS TO BE THE CALCULATION!!
+                        let st_nodes: Vec<&str> = roots_input.split(";").collect();
 
-                        println!("st_nodes: ");
-                        for f in 0..st_nodes.len(){
-                            print!("{}, ", st_nodes[f]);
+                        let json_string_tmp = json_input;
+
+                        for i in 0..st_nodes.len() {
+                            let dijkstra_temp_string =
+                                dijkstra(st_nodes[i].parse::<i32>().unwrap(), json_string_tmp);
+
+                            if i == 0 {
+                                result_string =
+                                    string_to_static_str(format!("{}", dijkstra_temp_string));
+                            } else {
+                                result_string = string_to_static_str(format!(
+                                    "{}:{}",
+                                    result_string, dijkstra_temp_string
+                                ));
+                            }
                         }
 
-                        
-                        println!("ein schritt vor der forschelife");
-
-                          for i in 0..st_nodes.len()
-                          {
-
-                            println!("{}", st_nodes[i]);
-
-                            let dijkstra_temp_string = dijkstra(st_nodes[i].parse::<i32>().unwrap(), json_string_tmp);
-
-                            println!("dijkstra erfolgreich");
-
-                            if i == 0
-                            {
-                                result_string = string_to_static_str(format!("{}", dijkstra_temp_string));
-                            }
-
-                            else{
-                                result_string=string_to_static_str(format!("{}:{}", result_string, dijkstra_temp_string));
-
-                            }
-
-                             
-                          }
-
-
-                          status_client=StatusClient::send_calculation_success;
-                       }
-                      StatusClient::send_calculation_success => 
-                      {
-                          status_client=StatusClient::confirm_calculation_success;
-                          println!("done");
-                      }
-                      StatusClient::confirm_calculation_success=>
-                      {
-                          status_client=StatusClient::confirm_calculation_success;
-                      }
-                      StatusClient::error_status=> {println!("{}", MSG_ERROR);}
-                       
+                        status_client = StatusClient::send_calculation_success;
+                    }
+                    StatusClient::send_calculation_success => {
+                        status_client = StatusClient::confirm_calculation_success;
+                        println!("done");
+                    }
+                    StatusClient::confirm_calculation_success => {
+                        status_client = StatusClient::confirm_calculation_success;
+                    }
+                    StatusClient::error_status => {
+                        println!("{}", MSG_ERROR);
+                    }
                 }
-               
             }
         }
     }
@@ -285,7 +244,6 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
     fn started(&mut self, _ctx: &mut Context<Self>) {
         println!("Connected to server");
         ask_client();
-        
     }
 
     fn finished(&mut self, ctx: &mut Context<Self>) {
@@ -294,8 +252,7 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
     }
 }
 
-fn ask_client()
-{
+fn ask_client() {
     println!("Would you like to join our distributed system for calculating shortest paths with djikstra algorithm? Type 'y' !");
     println!("NOTE: IF YOU DO ANY OUTHER INPUT THEN 'y'YOU WILL QUIT THE PROCESS!");
 }

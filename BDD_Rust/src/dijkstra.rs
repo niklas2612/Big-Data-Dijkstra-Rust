@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Result;
+
 
 use crate::input_output::*;
 
@@ -52,7 +52,7 @@ pub fn dijkstra(start_node: i32, data: &str) -> String {
     let mut table_precursor = Vec::new();
     let mut table_distance = Vec::new();
 
-    for b in 0..amount_nodes {
+    for _b in 0..amount_nodes {
         table_node.push(0);
         table_precursor.push(0);
         table_distance.push(max);

@@ -1,26 +1,22 @@
 use std::collections::HashMap;
 
 #[derive(Copy, Clone)]
-struct table_line {
+struct TableLine {
     pre_node: u16,
     costs: u16,
 }
 
 pub struct Table {
-    table_lines: HashMap<u16, table_line>,
+    table_lines: HashMap<u16, TableLine>,
     start_node: u16,
 }
 
 impl Table {
-    fn add_line_to_table(&mut self, line: table_line, node: u16) -> () {
+    fn add_line_to_table(&mut self, line: TableLine, node: u16) -> () {
         self.table_lines.insert(node, line);
     }
 
-    fn get_line(&self, node: u16) -> table_line {
-        let tmp1 = self.table_lines[&node];
-
-        return tmp1;
-    }
+    
 
     fn get_costs(&self, node: u16) -> u16 {
         return self.table_lines[&node].costs;
@@ -63,7 +59,7 @@ pub fn create_table_from_string(string: &str) -> (i32, Table) {
     };
 
     let mut current_line: Vec<&str>;
-    let mut current_table_line: table_line;
+    let mut current_table_line: TableLine;
     let mut cur_pn: u16;
     let mut cur_co: u16;
     let mut cur_no: u16;
@@ -74,7 +70,7 @@ pub fn create_table_from_string(string: &str) -> (i32, Table) {
         cur_pn = current_line[1].parse().unwrap();
         cur_co = current_line[2].parse().unwrap();
 
-        current_table_line = table_line {
+        current_table_line = TableLine {
             pre_node: cur_pn,
             costs: cur_co,
         };

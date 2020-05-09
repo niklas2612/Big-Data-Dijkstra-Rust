@@ -20,14 +20,14 @@ use futures::stream::{SplitSink, StreamExt};
 
 enum StatusClient {
     // enum for managing status of client during distributed calculation
-    send_inquiry,
-    receive_json,
-    inquire_roots,
-    receive_roots,
-    inquire_calculation_success,
-    send_calculation_success,
-    confirm_calculation_success,
-    error_status,
+    SendInquiry,
+    RecieveJson,
+    InquireRoots,
+    RecieveRoots,
+    InquireCalculationSuccess,
+    SendCalculationSuccess,
+    ConfirmCalculationSuccess,
+    ErrorStatus,
 }
 
 // Messages to communicate with server
@@ -38,11 +38,11 @@ pub const MSG_JSON: &'static str = "json";
 pub const MSG_RESULT: &'static str = "result";
 pub const MSG_CONFIRM: &'static str = "confirm";
 
-static mut json_input: &'static str = "";          // var to save JSON file
-static mut roots_input: &'static str = "";         // var t save nodes
-static mut result_string: &'static str = "";       // var to save result 
+static mut JSON_INPUT: &'static str = "";          // var to save JSON file
+static mut ROOTS_INPUT: &'static str = "";         // var t save nodes
+static mut RESULT_STRING: &'static str = "";       // var to save result 
 
-static mut status_client: StatusClient = StatusClient::send_inquiry; // var for currenr server status
+static mut STATUS_CLIENT: StatusClient = StatusClient::SendInquiry; // var for currenr server status
 
 fn main() {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
@@ -74,10 +74,10 @@ fn main() {
         thread::spawn(move || loop {
             let mut cmd = String::new();
             unsafe {
-                match status_client 
+                match STATUS_CLIENT 
                 // handle statuses of server
                 {
-                    StatusClient::send_inquiry => {
+                    StatusClient::SendInquiry => {
                         if io::stdin().read_line(&mut cmd).is_err() {
                             println!("{}",MSG_ERROR);
                           }
@@ -92,27 +92,27 @@ fn main() {
                          }
                         }
                         
-                    StatusClient::receive_json => (),
-                    StatusClient::inquire_roots => {
+                    StatusClient::RecieveJson => (),
+                    StatusClient::InquireRoots => {
                         addr.do_send(ClientCommand(MSG_ROOT.to_string()));    // sending root trigger to server
                         thread::sleep(ten_millis);
                     }
-                    StatusClient::receive_roots =>(),
-                    StatusClient::inquire_calculation_success => {
+                    StatusClient::RecieveRoots =>(),
+                    StatusClient::InquireCalculationSuccess => {
                         addr.do_send(ClientCommand(MSG_SUCCESS.to_string()));   // sending success trigger to server
                         thread::sleep(ten_millis);
                     }
-                    StatusClient::send_calculation_success => {
+                    StatusClient::SendCalculationSuccess => {
                         addr.do_send(ClientCommand(MSG_RESULT.to_string()));     // sending result trigger to server
-                        addr.do_send(ClientCommand(result_string.to_string()));    
+                        addr.do_send(ClientCommand(RESULT_STRING.to_string()));    
                         // sending the result
                         thread::sleep(ten_millis);
                         println!(
                             "Your calculation was successfull transmitted. Thanks for your help!"
                         );
                     }
-                    StatusClient::confirm_calculation_success => {}
-                    StatusClient::error_status => {
+                    StatusClient::ConfirmCalculationSuccess => {}
+                    StatusClient::ErrorStatus => {
                         addr.do_send(ClientCommand(MSG_ERROR.to_string()));
                     }
                 }
@@ -171,71 +171,71 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
             unsafe {
                  // go to corresponding modus according to server message
                 match servermsg.as_str() {
-                    MSG_JSON => status_client = StatusClient::receive_json,
-                    MSG_ROOT => status_client = StatusClient::receive_roots,
-                    MSG_SUCCESS => status_client = StatusClient::inquire_calculation_success,
-                    MSG_ERROR => status_client = StatusClient::error_status,
-                    MSG_CONFIRM => status_client = StatusClient::confirm_calculation_success,
+                    MSG_JSON => STATUS_CLIENT = StatusClient::RecieveJson,
+                    MSG_ROOT => STATUS_CLIENT = StatusClient::RecieveRoots,
+                    MSG_SUCCESS => STATUS_CLIENT = StatusClient::InquireCalculationSuccess,
+                    MSG_ERROR => STATUS_CLIENT = StatusClient::ErrorStatus,
+                    MSG_CONFIRM => STATUS_CLIENT = StatusClient::ConfirmCalculationSuccess,
                     _ => (),
                 }
 
 
-                match status_client {
-                    StatusClient::send_inquiry => (),
+                match STATUS_CLIENT {
+                    StatusClient::SendInquiry => (),
                     // base status when making connection
-                    StatusClient::receive_json => {
+                    StatusClient::RecieveJson => {
                         println!("Received json file from server!");
 
-                        status_client = StatusClient::inquire_roots;
+                        STATUS_CLIENT = StatusClient::InquireRoots;
                     }
-                    StatusClient::inquire_roots => {
-                        json_input = string_to_static_str(servermsg);
+                    StatusClient::InquireRoots => {
+                        JSON_INPUT = string_to_static_str(servermsg);
                         // uses boxing for coping the value of servermsg to static variable for saving json input
                         println!(
                             "Inquireing roots from server... Just Type 'y'; any other input is also legit but 'y' prefered"
                         );
                       
                     }
-                    StatusClient::receive_roots => {
+                    StatusClient::RecieveRoots => {
                         println!("Received startnodes from server!");
 
-                        status_client = StatusClient::inquire_calculation_success;
+                        STATUS_CLIENT = StatusClient::InquireCalculationSuccess;
                     }
-                    StatusClient::inquire_calculation_success => {
-                        roots_input = string_to_static_str(servermsg);
+                    StatusClient::InquireCalculationSuccess => {
+                        ROOTS_INPUT = string_to_static_str(servermsg);
                         // uses boxing for coping the value of servermsg to static variable for saving root input
-                        println!("You are responsible for the start nodes: {}", roots_input);
+                        println!("You are responsible for the start nodes: {}", ROOTS_INPUT);
                         println!("\nCalculating...");
 
                      
-                        let st_nodes: Vec<&str> = roots_input.split(";").collect();
+                        let st_nodes: Vec<&str> = ROOTS_INPUT.split(";").collect();
 
-                        let json_string_tmp = json_input;
+                        let json_string_tmp = JSON_INPUT;
 
                         for i in 0..st_nodes.len() {
                             let dijkstra_temp_string =
                                 dijkstra(st_nodes[i].parse::<i32>().unwrap(), json_string_tmp);  // doing djikstra calculation
 
                             if i == 0 {
-                                result_string =
+                                RESULT_STRING =
                                     string_to_static_str(format!("{}", dijkstra_temp_string));
                             } else {
-                                result_string = string_to_static_str(format!(
+                                RESULT_STRING = string_to_static_str(format!(
                                     "{}:{}",
-                                    result_string, dijkstra_temp_string
+                                    RESULT_STRING, dijkstra_temp_string
                                 ));
                             }
                         }
 
-                        status_client = StatusClient::send_calculation_success;
+                        STATUS_CLIENT = StatusClient::SendCalculationSuccess;
                     }
-                    StatusClient::send_calculation_success => {
-                        status_client = StatusClient::confirm_calculation_success;
+                    StatusClient::SendCalculationSuccess => {
+                        STATUS_CLIENT = StatusClient::ConfirmCalculationSuccess;
                     }
-                    StatusClient::confirm_calculation_success => {
-                        status_client = StatusClient::confirm_calculation_success;
+                    StatusClient::ConfirmCalculationSuccess => {
+                        STATUS_CLIENT = StatusClient::ConfirmCalculationSuccess;
                     }
-                    StatusClient::error_status => {
+                    StatusClient::ErrorStatus => {
                         println!("{}", MSG_ERROR);
                     }
                 }

@@ -26,18 +26,18 @@ struct PathInformation {
   to: String,
   costs: u16,
 }
-pub fn input_parse(Roots: &mut RootList, data: String) -> Result<()> {
+pub fn input_parse(rootlist: &mut RootList, data: String) -> Result<()> {
   // Parse the string of data into a Input object
   let input: Input = serde_json::from_str(&data)?;
-  let mut Root = HashSet::new();
+  let mut root = HashSet::new();
   for roots in &input.paths {
     // using Hashset for extracting start nodes
-    Root.insert(roots.from.clone());
-    Root.insert(roots.to.clone());
+    root.insert(roots.from.clone());
+    root.insert(roots.to.clone());
   }
 
-  for roots in &Root {
-    Roots.roots.push(roots.to_string());   // give the startnode list back
+  for roots in &root {
+    rootlist.roots.push(roots.to_string());   // give the startnode list back
   }
 
   Ok(()) 
@@ -50,8 +50,4 @@ pub fn read_input() -> String {
     .read_to_string(&mut file_input)
     .expect("could not read file");
   return file_input;
-}
-
-pub fn show_input(input: &String) {
-  println!(" Json Input: \n\n{}", input);
 }

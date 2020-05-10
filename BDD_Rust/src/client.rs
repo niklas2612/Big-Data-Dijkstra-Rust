@@ -59,8 +59,6 @@ fn main() {
     let mut connection_string = set_connection();
     connection_string = format!("{}{}{}","http://",connection_string.trim(), "/ws/");
 
-    println!("{}", connection_string);
-
     let sys = System::new("websocket-client");
 
     Arbiter::spawn(async {

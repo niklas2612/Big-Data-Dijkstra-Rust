@@ -34,6 +34,11 @@ impl Table {
 
     //get path from own startnode to node given as parameter
     pub fn get_path(&self, node: i32) -> String {
+
+        if !self.table_lines.contains_key(&node){
+            return String::from(format!("Error: node {} does not exist!",node));
+        }
+
         let mut current_pre_node: i32 = self.get_pre_node(node);
         let mut path: String = format!(" - {}", node);
 

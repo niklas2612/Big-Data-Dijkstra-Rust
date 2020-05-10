@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 
-const FILE_PATH: &'static str = "input_data/input2.json";
+const FILE_PATH: &'static str = "input_data/input.json";
 // path for JSON file
 
 #[derive(Clone)]

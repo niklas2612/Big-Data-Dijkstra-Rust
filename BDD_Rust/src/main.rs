@@ -6,7 +6,7 @@ mod user_output;
 use user_output::*;
 use input_output::*;
 
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::{SocketAddr};
 use std::io::{stdin, stdout, Write};
 use std::collections::*;
 use std::sync::{Mutex};
@@ -409,7 +409,7 @@ fn user_input() {
             let mut start = String::new();
             let mut end = String::new();
 
-            print!("Enter startnodes:\n");
+            println!("Enter startnode:\n");
             let _ = stdout().flush();
             stdin()
                 .read_line(&mut start)
@@ -422,7 +422,7 @@ fn user_input() {
             }
             let start = start.parse::<i32>().unwrap();
 
-            print!("Zielknoten eingeben:\n");
+            println!("Enter target node:\n");
             let _ = stdout().flush();
             stdin()
                 .read_line(&mut end)
@@ -435,12 +435,19 @@ fn user_input() {
             }
             let end = end.parse::<i32>().unwrap();
 
-            let path = TABLES.lock().unwrap()[&start].get_path(end);
+            if TABLES.lock().unwrap().contains_key(&start) {
 
-            println!("{}", path);
+                let path = TABLES.lock().unwrap()[&start].get_path(end);
+                println!("{}", path);
+
+            }
+            else{
+                println!("Error: node {} does not exist!", start);
+            }
+            
 
             exit = String::from("");
-            print!("Beenden?(any key for no or y for yes):\n");
+            println!("\nExit?(any key for no or y for yes):\n");
             let _ = stdout().flush();
             stdin()
                 .read_line(&mut exit)

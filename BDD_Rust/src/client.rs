@@ -279,7 +279,7 @@ fn string_to_static_str(s: String) -> &'static str {
 
 fn set_connection() -> String
 {
-    println!("Please type IP-Adress and port of your server you want to connect with!");
+    println!("Please type IP-Adress and port of your server you want to connect with! (e.g.: 127.0.0.1:8080)");
     
     let mut input = String::new();
 

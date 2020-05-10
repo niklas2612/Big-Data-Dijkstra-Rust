@@ -389,7 +389,7 @@ fn set_workers() -> i32 {
 
 fn set_connection() -> String
 {
-    println!("Welcome to Big Data Dijkstra! Please type in the IP-Adress and port of the server you want to set up!\n");
+    println!("Welcome to Big Data Dijkstra! Please type in the IP-Adress and port of the server you want to set up! (e.g.: 127.0.0.1:8080)\n");
    
     let mut input = String::new();
 

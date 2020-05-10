@@ -23,7 +23,7 @@ pub fn dijkstra(start_node: i32, data: &str) -> String {
     let mut nodelist = Vec::new();
     input_parse(&mut rootlist, String::from(data)).unwrap();
 
-    //println!( "nodelist");
+    
     for a in 0..rootlist.roots.len() {
         nodelist.push(rootlist.roots[a].parse::<i32>().unwrap());
     }
@@ -34,7 +34,6 @@ pub fn dijkstra(start_node: i32, data: &str) -> String {
     let amount_paths = input.paths.len();
 
     let mut max: i32 = i32::max_value();
-    //println!("max {}", max);
     max = (max - 1) / 2;
     let mut node1 = Vec::new();
     let mut node2 = Vec::new();
@@ -46,7 +45,7 @@ pub fn dijkstra(start_node: i32, data: &str) -> String {
         distance.push(input.paths[a].costs as i32);
     }
 
-    //INITALISIERUNG
+    //INITALISATION
 
     let mut table_node = Vec::new();
     let mut table_precursor = Vec::new();
@@ -85,23 +84,20 @@ pub fn dijkstra(start_node: i32, data: &str) -> String {
         if nodelist_empty == true {
             break;
         }
-        //println!("Q nicht leer");
-        let mut u: i32 = max; //index von u aus nodelist
-        let mut u_value: i32 = max; //wert von u aus nodelist
-                                    //let mut maxhelp:i32=i32::max_value();
+        //println!("Q not empty");
+        let mut u: i32 = max; //index of u from nodelist
+        let mut u_value: i32 = max; //value of u from nodelist
+                                    
         let mut maxhelp: i32 = max;
-        //println!("u ist {}", u);
+        
 
         for i in 0..(amount_nodes) {
-            //println!("i ist {}", i);
+            
 
             if table_distance[i] <= maxhelp && nodelist[i] != max {
-                //<= ??
-                //println!("test 123, {}",i);
                 maxhelp = table_distance[i];
                 u = (i) as i32;
-                u_value = table_node[i]; //eventuell tablenode statt nodelist
-                                         //println!("question");
+                u_value = table_node[i]; 
             }
         }
 
@@ -113,7 +109,7 @@ pub fn dijkstra(start_node: i32, data: &str) -> String {
             if node1[i] == u_value || node2[i] == u_value {
                 for j in 0..amount_nodes {
                     if nodelist[j] == node1[i] || nodelist[j] == node2[i] {
-                        //alternative streckendistanz berechnen
+                        //calculate alternative route distance
                         let distance_alt = table_distance[(u) as usize] + distance[i];
 
                         if distance_alt < table_distance[j] {
@@ -127,7 +123,7 @@ pub fn dijkstra(start_node: i32, data: &str) -> String {
 
         table_number = table_number + 1;
     }
-    //Vorgänger von Startknoten setzen
+    //Set predecessor of start node
     for d in 0..amount_nodes {
         if start_node == table_node[d] {
             table_precursor[d] = start_node;

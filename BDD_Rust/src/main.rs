@@ -1,6 +1,4 @@
-// here should be a great project header, created by L.N
 
-// annotation: the terms "roots" and "startnodes" are describing the same (maybe L.N adapts to unique term if he wants a good grade)
 
 mod input_output;
 mod user_output;
@@ -13,7 +11,7 @@ use std::io::{stdin, stdout, Write};
 use std::collections::*;
 use std::sync::{Mutex};
 use std::time::{Duration, Instant};
-use std::{io, thread};
+use std::{io, thread, time};
 use actix::prelude::*;
 use actix_files as fs;
 use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
@@ -118,12 +116,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
 
         match msg {
             Ok(ws::Message::Ping(msg)) => {
-                // when receiving ping -> comm with client
+                // when receiving ping -> communication with client
                 self.hb = Instant::now();
                 ctx.pong(&msg);
             }
             Ok(ws::Message::Pong(_)) => {
-                // when receiving pong -> com with Web IF
+                // when receiving pong -> communication with Web IF
                 self.hb = Instant::now();
             }
             Ok(ws::Message::Text(text)) => {
@@ -323,9 +321,7 @@ async fn main() -> std::io::Result<()> {
     })
     // start http server on 127.0.0.1:8080
     .workers(amount_workers as usize)
-    
-   .bind(server)?   
-    
+    .bind(server)?   
     .run()
     .await
 }
@@ -403,13 +399,17 @@ fn set_connection() -> String
 }
 fn user_input() {
     thread::spawn(move || {
+        // delay for printing disconnection logger of last client befor starting user input
+        let delay = time::Duration::from_millis(1000);
+        thread::sleep(delay);    
+
         let mut exit = String::from("n");
         
         while !(exit.trim() == "y") {
             let mut start = String::new();
             let mut end = String::new();
 
-            print!("Startknoten eingeben:\n");
+            print!("Enter startnodes:\n");
             let _ = stdout().flush();
             stdin()
                 .read_line(&mut start)

@@ -38,7 +38,6 @@ pub const MSG_ROOT: &'static str = "root";
 pub const MSG_SUCCESS: &'static str = "success";
 pub const MSG_ERROR: &'static str = "error";
 pub const MSG_JSON: &'static str = "json";
-pub const MSG_RESULT: &'static str = "result";
 pub const MSG_CONFIRM: &'static str = "confirm";
 
  // var to save JSON file as string
@@ -81,7 +80,7 @@ fn main() {
             ChatClient(SinkWrite::new(sink, ctx))
         });
 
-        let ten_millis = time::Duration::from_millis(200);
+        let delay = time::Duration::from_millis(200);
         // thread sleep required in following to avoid endless loop
 
         // start console loop to register clients
@@ -111,22 +110,21 @@ fn main() {
                     // sending root trigger to server
                     StatusClient::InquireRoots => {
                         addr.do_send(ClientCommand(MSG_ROOT.to_string()));    
-                        thread::sleep(ten_millis);
+                        thread::sleep(delay);
                     }
                     StatusClient::RecieveRoots =>(),
 
                     // sending success trigger to server
                     StatusClient::InquireCalculationSuccess => {
                         addr.do_send(ClientCommand(MSG_SUCCESS.to_string()));   
-                        thread::sleep(ten_millis);
+                        thread::sleep(delay);
                     }
 
-                    // sending result trigger to server
-                    StatusClient::SendCalculationSuccess => {
-                        addr.do_send(ClientCommand(MSG_RESULT.to_string()));     
+                    // sending result to server
+                    StatusClient::SendCalculationSuccess => { 
                         addr.do_send(ClientCommand(RESULT_STRING.to_string()));    
-                        // sending the result
-                        thread::sleep(ten_millis);
+                        // sending the result string
+                        thread::sleep(delay);
                         println!(
                             "Your calculation was successfull transmitted. Thanks for your help!"
                         );

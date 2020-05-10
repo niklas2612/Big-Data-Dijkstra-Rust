@@ -4,8 +4,11 @@ use dijkstra::*;
 
 mod input_output;
 
+
 use std::time::Duration;
 use std::{io, thread, time};
+use std::process;
+
 
 use actix::io::SinkWrite;
 use actix::*;
@@ -38,21 +41,32 @@ pub const MSG_JSON: &'static str = "json";
 pub const MSG_RESULT: &'static str = "result";
 pub const MSG_CONFIRM: &'static str = "confirm";
 
-static mut JSON_INPUT: &'static str = "";          // var to save JSON file
-static mut ROOTS_INPUT: &'static str = "";         // var t save nodes
-static mut RESULT_STRING: &'static str = "";       // var to save result 
+ // var to save JSON file as string
+static mut JSON_INPUT: &'static str = "";       
 
-static mut STATUS_CLIENT: StatusClient = StatusClient::SendInquiry; // var for currenr server status
+//variable to store startnodes as decoded string
+static mut STARTNODES_INPUT: &'static str = "";
+
+//var to save resultstring
+static mut RESULT_STRING: &'static str = "";       
+
+// var for currenr server status
+static mut STATUS_CLIENT: StatusClient = StatusClient::SendInquiry; 
 
 fn main() {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
+    let mut connection_string = set_connection();
+    connection_string = format!("{}{}{}","http://",connection_string.trim(), "/ws/");
+
+    println!("{}", connection_string);
+
     let sys = System::new("websocket-client");
 
     Arbiter::spawn(async {
         let (response, framed) = Client::new()
-            .ws("http://127.0.0.1:8080/ws/")
+            .ws(connection_string)
             .connect()
             .await
             .map_err(|e| {
@@ -93,17 +107,23 @@ fn main() {
                         }
                         
                     StatusClient::RecieveJson => (),
+
+                    // sending root trigger to server
                     StatusClient::InquireRoots => {
-                        addr.do_send(ClientCommand(MSG_ROOT.to_string()));    // sending root trigger to server
+                        addr.do_send(ClientCommand(MSG_ROOT.to_string()));    
                         thread::sleep(ten_millis);
                     }
                     StatusClient::RecieveRoots =>(),
+
+                    // sending success trigger to server
                     StatusClient::InquireCalculationSuccess => {
-                        addr.do_send(ClientCommand(MSG_SUCCESS.to_string()));   // sending success trigger to server
+                        addr.do_send(ClientCommand(MSG_SUCCESS.to_string()));   
                         thread::sleep(ten_millis);
                     }
+
+                    // sending result trigger to server
                     StatusClient::SendCalculationSuccess => {
-                        addr.do_send(ClientCommand(MSG_RESULT.to_string()));     // sending result trigger to server
+                        addr.do_send(ClientCommand(MSG_RESULT.to_string()));     
                         addr.do_send(ClientCommand(RESULT_STRING.to_string()));    
                         // sending the result
                         thread::sleep(ten_millis);
@@ -111,7 +131,7 @@ fn main() {
                             "Your calculation was successfull transmitted. Thanks for your help!"
                         );
                     }
-                    StatusClient::ConfirmCalculationSuccess => {}
+                    StatusClient::ConfirmCalculationSuccess => {process::exit(0)}
                     StatusClient::ErrorStatus => {
                         addr.do_send(ClientCommand(MSG_ERROR.to_string()));
                     }
@@ -202,13 +222,13 @@ impl StreamHandler<Result<Frame, WsProtocolError>> for ChatClient {
                         STATUS_CLIENT = StatusClient::InquireCalculationSuccess;
                     }
                     StatusClient::InquireCalculationSuccess => {
-                        ROOTS_INPUT = string_to_static_str(servermsg);
+                        STARTNODES_INPUT = string_to_static_str(servermsg);
                         // uses boxing for coping the value of servermsg to static variable for saving root input
-                        println!("You are responsible for the start nodes: {}", ROOTS_INPUT);
+                        println!("You are responsible for the start nodes: {}", STARTNODES_INPUT);
                         println!("\nCalculating...");
 
                      
-                        let st_nodes: Vec<&str> = ROOTS_INPUT.split(";").collect();
+                        let st_nodes: Vec<&str> = STARTNODES_INPUT.split(";").collect();
 
                         let json_string_tmp = JSON_INPUT;
 
@@ -259,6 +279,17 @@ fn ask_client() {
 }
 fn string_to_static_str(s: String) -> &'static str {
     Box::leak(s.into_boxed_str())
+}
+
+fn set_connection() -> String
+{
+    println!("Please type IP-Adress and port of your server you want to connect with!");
+    
+    let mut input = String::new();
+
+    io::stdin().read_line(&mut input).unwrap();
+    return input;
+
 }
 
 impl actix::io::WriteHandler<WsProtocolError> for ChatClient {}

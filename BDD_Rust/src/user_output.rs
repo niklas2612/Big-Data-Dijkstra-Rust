@@ -1,33 +1,40 @@
 use std::collections::HashMap;
 
+//struct simulates a table line
 #[derive(Copy, Clone)]
 struct TableLine {
-    pre_node: u16,
-    costs: u16,
+    pre_node: i32,
+    costs: i32,
 }
 
+
+//struct simulates a table
 pub struct Table {
-    table_lines: HashMap<u16, TableLine>,
-    start_node: u16,
+    table_lines: HashMap<i32, TableLine>,
+    start_node: i32,
 }
 
 impl Table {
-    fn add_line_to_table(&mut self, line: TableLine, node: u16) -> () {
+    fn add_line_to_table(&mut self, line: TableLine, node: i32) -> () {
         self.table_lines.insert(node, line);
     }
 
-    
 
-    fn get_costs(&self, node: u16) -> u16 {
+    //gets costs from own startnode to parameternode
+    fn get_costs(&self, node: i32) -> i32 {
         return self.table_lines[&node].costs;
     }
 
-    fn get_pre_node(&self, node: u16) -> u16 {
+
+    //get prenode of parameternode
+    fn get_pre_node(&self, node: i32) -> i32 {
         return self.table_lines[&node].pre_node;
     }
 
-    pub fn get_path(&self, node: u16) -> String {
-        let mut current_pre_node: u16 = self.get_pre_node(node);
+
+    //get path from own startnode to node given as parameter
+    pub fn get_path(&self, node: i32) -> String {
+        let mut current_pre_node: i32 = self.get_pre_node(node);
         let mut path: String = format!(" - {}", node);
 
         while current_pre_node != self.start_node {
@@ -46,8 +53,10 @@ impl Table {
     }
 }
 
+
+//returns an tuple (instance of tablestruct and startnode) built from an input string
 pub fn create_table_from_string(string: &str) -> (i32, Table) {
-    //0;0,0,0;1,2,3;...
+    
     let tokens: Vec<&str> = string.split(";").collect();
 
     let lines = HashMap::new();
@@ -55,14 +64,14 @@ pub fn create_table_from_string(string: &str) -> (i32, Table) {
 
     let mut table = Table {
         table_lines: lines,
-        start_node: start_node as u16,
+        start_node: start_node as i32,
     };
 
     let mut current_line: Vec<&str>;
     let mut current_table_line: TableLine;
-    let mut cur_pn: u16;
-    let mut cur_co: u16;
-    let mut cur_no: u16;
+    let mut cur_pn: i32;
+    let mut cur_co: i32;
+    let mut cur_no: i32;
 
     for i in 1..tokens.len() {
         current_line = tokens[i].split(",").collect();

@@ -1,13 +1,14 @@
 // here should be a great project header, created by L.N
 
 // annotation: the terms "roots" and "startnodes" are describing the same (maybe L.N adapts to unique term if he wants a good grade)
-mod dijkstra;
+
 mod input_output;
 mod user_output;
 
 use user_output::*;
 use input_output::*;
 
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::io::{stdin, stdout, Write};
 use std::collections::*;
 use std::sync::{Mutex};
@@ -17,6 +18,7 @@ use actix::prelude::*;
 use actix_files as fs;
 use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
+use std::process;
 
 
 #[macro_use]
@@ -48,13 +50,25 @@ pub const MSG_SUCCESS: &'static str = "success";
 pub const MSG_ERROR: &'static str = "error";
 pub const MSG_CONFIRM: &'static str = "confirm";
 
-static mut AMOUNT_CLIENTS: i32 = 0; // variabel to save amount of clients
-static mut AMOUNT_CLIENTSREADY: i32 = 0; // variabel to save amount of clients ready for calculating
+// variable to store amount of clients
+static mut AMOUNT_CLIENTS: i32 = 0; 
+
+ // variable to store amount of clients ready for calculating
+static mut AMOUNT_CLIENTSREADY: i32 = 0; 
+
+//variable to store amount of clients which recieved the json file
 static mut JSON_COUNTER: i32 = 0;
-static mut ROOT_COUNTER: i32 = 0;
-static mut STATUS_SERVER: StatusServer = StatusServer::SendAcknowledge; // variable for the current server status
+
+//counter how many startnodes are sent to the clients
+static mut STARTNODE_COUNTER: i32 = 0;
+
+// variable for the current server status
+static mut STATUS_SERVER: StatusServer = StatusServer::SendAcknowledge; 
+
+//counter for whole amount of nodes in graph
 static mut NODE_COUNTER: i32 = -1;
 
+//static hashmap for result tables
 lazy_static! {
     static ref TABLES: Mutex<HashMap<i32, Table>> = {
         let m = HashMap::new();
@@ -62,9 +76,9 @@ lazy_static! {
     };
 }
 
+// List for saving all start nodes before sending them to clients     
 lazy_static! {
-    static ref ROOTLIST_ALL: Mutex<Vec<String>> = Mutex::new(Vec::new());  
-    // List for saving all start nodes before sending them to clients     
+    static ref STARTNODES_ALL: Mutex<Vec<String>> = Mutex::new(Vec::new()); 
 }
 
 /// do websocket handshake and start `MyWebSocket` actor
@@ -144,15 +158,22 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
                             }
 
                             child.join().unwrap();
-                            println!("sending json file to client {} ...", JSON_COUNTER+1);
-                            ctx.text(MSG_JSON);                   // sending JSON trigger to client
-                            let json_input: String = read_input(); // reading json file
-                            ctx.text(json_input);                 // sending JSON file to client
+                            println!("sending json file to client {} ...", JSON_COUNTER);
+                            // sending JSON trigger to client
+                            ctx.text(MSG_JSON);               
+
+                            // reading json file   
+                            let json_input: String = read_input(); 
+                            ctx.text(json_input);              
+
+                            // sending JSON file to client
                             if AMOUNT_CLIENTS == JSON_COUNTER {
                                 let mut rootlist = RootList { roots: Vec::new() };
                                 input_parse(&mut rootlist, read_input()).unwrap();
                                 for i in 0..rootlist.roots.len() {
-                                    ROOTLIST_ALL.lock().unwrap().push(rootlist.roots[i].clone());       // make a List with all nodes out of JSON input
+
+                                    // make a List with all nodes out of JSON input
+                                    STARTNODES_ALL.lock().unwrap().push(rootlist.roots[i].clone());
                                 }
                             }
                 
@@ -166,52 +187,57 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
                             println!("");
                             println!(
                                 "Sending respective startnodes to client {} ...",
-                                ROOT_COUNTER
+                                STARTNODE_COUNTER
                             );
-                            let amount_roots = ROOTLIST_ALL.lock().unwrap().len() as i32;
-                            let roots_per_client = amount_roots / AMOUNT_CLIENTS;
-                           
+
+                            //calculation which startnodes are sent to which client
+                            let amount_roots = STARTNODES_ALL.lock().unwrap().len() as i32;
+                            let roots_per_client = amount_roots / AMOUNT_CLIENTS;                           
                             if NODE_COUNTER == -1 {
                                 NODE_COUNTER = amount_roots;
                             }
-
                             let start = amount_roots - NODE_COUNTER;
                             NODE_COUNTER = NODE_COUNTER - roots_per_client;
                             let mut end = amount_roots - NODE_COUNTER;
-
                             let tmp = amount_roots % AMOUNT_CLIENTS;
-                            if (tmp - (AMOUNT_CLIENTS - ROOT_COUNTER)) > 0 {
+                            if (tmp - (AMOUNT_CLIENTS - STARTNODE_COUNTER)) > 0 {
                                 NODE_COUNTER -= 1;
-                                end += 1;
-                            }
+                                end += 1;                            }
 
                             if NODE_COUNTER == 0 {
                                 NODE_COUNTER = -1;
                             }
 
-                            let vartmp = ROOTLIST_ALL.lock().unwrap().to_vec();
-                            let vartmp2 = split_vec(start as usize, (end - 1) as usize, vartmp);
+                            let startnodes_as_vec = STARTNODES_ALL.lock().unwrap().to_vec();
+                            let startnodes_as_decoded_string = split_vec(start as usize, (end - 1) as usize, startnodes_as_vec);
 
-                            ctx.text(MSG_ROOT);     // sending root trigger for client
-                            ctx.text(vartmp2.as_str()); // sending startnodes
-                            ROOT_COUNTER -= 1;
+
+                            // sending root trigger for client
+                            ctx.text(MSG_ROOT);     
+
+                            // sending startnodes
+                            ctx.text(startnodes_as_decoded_string.as_str()); 
+                            STARTNODE_COUNTER -= 1;
                             STATUS_SERVER = StatusServer::RecieveCalculationSuccess;
                         }
+
                         StatusServer::RecieveCalculationSuccess => {
                             println!(
                                 "All data were sent to client {} calculation in progress!",
-                                ROOT_COUNTER + 1
+                                STARTNODE_COUNTER + 1
                             );
                             STATUS_SERVER = StatusServer::RecieveResult;
                         }
+
                         StatusServer::RecieveResult => {
                             println!(
                                 "Client {} has sent his results to this server!",
-                                ROOT_COUNTER+1
+                                STARTNODE_COUNTER+1
                             );
                             println!("");
 
-                            let tmp_table_strings: Vec<&str> = text.split(":").collect(); // decode the table string received from client
+                            // decode the table string received from client
+                            let tmp_table_strings: Vec<&str> = text.split(":").collect(); 
 
                             for m in 0..tmp_table_strings.len() {
                                 let (node_id, table) =
@@ -276,6 +302,11 @@ impl MyWebSocket {
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     let connection_string= set_connection();
+    
+
+    
+    let server: SocketAddr = connection_string.trim().parse().expect("Unable to parse server address");
+
     let amount_workers = set_workers();         // getting amount of workers
 
     
@@ -292,8 +323,9 @@ async fn main() -> std::io::Result<()> {
     })
     // start http server on 127.0.0.1:8080
     .workers(amount_workers as usize)
-   //.bind(connection_string.to_socket_addrs().unwrap())?   //does not work, maybe Chris Mader will fix this
-    .bind("127.0.0.1:8080")? 
+    
+   .bind(server)?   
+    
     .run()
     .await
 }
@@ -301,7 +333,7 @@ async fn main() -> std::io::Result<()> {
 fn acknowledgeclient() {
     unsafe {
         JSON_COUNTER = AMOUNT_CLIENTS;
-        ROOT_COUNTER = AMOUNT_CLIENTS;
+        STARTNODE_COUNTER = AMOUNT_CLIENTS;
         AMOUNT_CLIENTSREADY += 1;
         println!("");
         println!("total amount of clients is : {}", AMOUNT_CLIENTS);
@@ -361,10 +393,8 @@ fn set_workers() -> i32 {
 
 fn set_connection() -> String
 {
-    println!("Welcome to Big Data Djikstra! This is a distributed system for calculating the shortest path using actix and websockets for communication");
-    println!("Please enter the IP adress and port to host your webserver.");
-    println!("Standard is 127.0.0.1:8080 (localhost), optionally you can enter your IPv4 to host this service for multiple devices. Therefore use ipconfig on your cmd to look up your address");
-
+    println!("Welcome to Big Data Dijkstra! Please type in the IP-Adress and port of the server you want to set up!\n");
+   
     let mut input = String::new();
 
     io::stdin().read_line(&mut input).unwrap();
@@ -374,7 +404,7 @@ fn set_connection() -> String
 fn user_input() {
     thread::spawn(move || {
         let mut exit = String::from("n");
-
+        
         while !(exit.trim() == "y") {
             let mut start = String::new();
             let mut end = String::new();
@@ -403,19 +433,22 @@ fn user_input() {
             if let Some('\r') = end.chars().next_back() {
                 end.pop();
             }
-            let end = end.parse::<u16>().unwrap();
+            let end = end.parse::<i32>().unwrap();
 
             let path = TABLES.lock().unwrap()[&start].get_path(end);
 
             println!("{}", path);
 
+            exit = String::from("");
             print!("Beenden?(any key for no or y for yes):\n");
             let _ = stdout().flush();
             stdin()
                 .read_line(&mut exit)
                 .expect("Did not enter a correct string\n");
 
-            println!("{}", exit);
+            if exit.trim() == "y"{
+                process::exit(0);
+            }
         }
     });
 }

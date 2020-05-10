@@ -1,20 +1,20 @@
-# websocket
+# Big-Data-Dijkstra
 
-Instructions for running BDD.
+Instructions for running BDD:
 
 ## Running program
 
 ### server
 
 ```bash
-cd examples/websocket
+cd BDD_Rust
 cargo run --bin websocket-server
 ```
 
 ### client
 
 ```bash
-cd examples/websocket
+cd BDD_rust
 cargo run --bin websocket-client
 ```
 
@@ -22,7 +22,7 @@ cargo run --bin websocket-client
 
 ### structure
 
-One JSON-object needs to contain a "from"-value (ID of startnode), a "to"-value (ID of target node) and a costs-value. One of this objects contains the information for one path. All of these objects should be contained in the Array "paths":
+One JSON-object needs to contain a "from"-value (ID of startnode), a "to"-value (ID of target node) and a costs-value. One of these objects contains the information for one path. All of these objects should be contained in the Array "paths":
 
 ```
 {
